@@ -1,11 +1,11 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, Menu } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, Menu, Tray, nativeImage } = require('electron');
 const path = require('node:path');
 const { Library } = require('./library.cjs');
-let window, library;
+const { createTray } = require('./tray.cjs');
+let window, library, desktopTray;
 if (!app.isPackaged && process.env.PAPERREP_USER_DATA) app.setPath('userData', process.env.PAPERREP_USER_DATA);
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
-app.on('second-instance', () => { if (window) { if (window.isMinimized()) window.restore(); window.show(); window.focus(); } });
 app.whenReady().then(async () => {
   library = new Library(path.join(app.getPath('userData'), 'library.json'), p => shell.trashItem(p));
   let initError;
@@ -17,9 +17,18 @@ app.whenReady().then(async () => {
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     window.webContents.on('will-navigate', e => e.preventDefault());
     window.loadFile(path.join(__dirname, '../ui/index.html'));
-    window.on('close', e => { if (library.state.busy) e.preventDefault(); });
+    window.on('close', e => desktopTray.handleClose(e));
     window.on('closed', () => { window = null; });
   };
+  const showWindow = () => {
+    if (!window || window.isDestroyed()) createWindow();
+    if (window.isMinimized()) window.restore();
+    window.show();
+    window.focus();
+  };
+  desktopTray = createTray({ app, Menu, Tray, nativeImage }, {
+    library, showWindow, hideWindow: () => { if (window && !window.isDestroyed()) window.hide(); }
+  });
   library.on('state', state => { if (window && !window.isDestroyed()) window.webContents.send('library-state', state); });
   const allowed = new Set(['state', 'chooseRoot', 'configure', 'pickFiles', 'import', 'createFolder', 'delete', 'sync', 'open', 'reveal']);
   ipcMain.handle('library', async (event, method, data) => {
@@ -65,8 +74,5 @@ app.whenReady().then(async () => {
   if (library.config.root && !initError) library.sync().catch(() => {});
   // This checks local saves only; idle time never triggers a remote sync.
   setInterval(() => library.poll().catch(e => { library.state.error = e.message; library.publish(); }), 2000).unref();
-  app.on('activate', () => { if (!window) createWindow(); });
 });
-app.on('before-quit', e => { if (library?.state.busy) { e.preventDefault(); if (window) window.webContents.send('library-state', library.state); } });
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 }

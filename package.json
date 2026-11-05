@@ -8,7 +8,7 @@
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "test": "node --test tests/library.test.cjs tests/git-process.test.cjs",
+    "test": "node --test tests/library.test.cjs tests/git-process.test.cjs tests/tray.test.cjs",
     "test:ui": "node --test tests/ui.test.cjs",
     "build:mac": "electron-builder --mac dmg --arm64 --x64",
     "build:win": "electron-builder --win nsis --x64",
