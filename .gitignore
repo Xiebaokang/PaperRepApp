@@ -9,3 +9,9 @@ Thumbs.db
 .env.*
 !.env.example
 *.pdf
+ios/.build/
+ios/DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcresult/
+*.ipa

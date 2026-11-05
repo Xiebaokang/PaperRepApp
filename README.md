@@ -2,6 +2,8 @@
 
 简洁的 macOS / Windows 论文资料库。PDF 直接保存在本地 Git 仓库，按 `年份/月份/文件名.pdf` 组织；文件名就是论文名。
 
+原生 iPhone 版本位于 [`ios/`](ios/README.md)，使用 Xcode 打开 `ios/PaperRep.xcodeproj`，内置 PDF 阅读器，与桌面版同步同一论文仓库。
+
 ## 开发
 
 需要 Node.js 22+ 和 Git。macOS 可使用 Xcode Command Line Tools 提供的 Git；Windows 安装 Git for Windows。
