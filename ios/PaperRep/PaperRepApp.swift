@@ -22,6 +22,7 @@ import PDFKit
                         }
                     }
                     let month = index < 2 ? "2026/11" : "2026/10"
+                    UserDefaults.standard.removeObject(forKey: "reader.page." + month + "/" + name + ".pdf")
                     try? data.write(to: disk.root.appendingPathComponent(month + "/" + name + ".pdf"))
                 }
             }

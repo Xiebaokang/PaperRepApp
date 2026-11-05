@@ -98,16 +98,40 @@ import PDFKit
 
 struct PDFCanvas: UIViewRepresentable {
     @ObservedObject var model: ReaderModel
+    var onTap: () -> Void
+    func makeCoordinator() -> Coordinator { Coordinator(model: model, onTap: onTap) }
     func makeUIView(context: Context) -> PDFView {
         let view = PDFView()
         view.document = model.document; view.autoScales = true
         view.displayMode = .singlePageContinuous; view.displayDirection = .vertical
         view.backgroundColor = .secondarySystemBackground
+        let singleTap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.tapped))
+        let doubleTap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.doubleTapped))
+        doubleTap.numberOfTapsRequired = 2
+        for gesture in [singleTap, doubleTap] {
+            gesture.cancelsTouchesInView = false
+            gesture.delegate = context.coordinator
+            view.addGestureRecognizer(gesture)
+        }
+        // Let PDFKit handle double-tap zoom without also toggling the bars.
+        singleTap.require(toFail: doubleTap)
         DispatchQueue.main.async { model.attach(view) }
         return view
     }
-    func updateUIView(_ uiView: PDFView, context: Context) {}
-    static func dismantleUIView(_ uiView: PDFView, coordinator: ()) { uiView.document = nil }
+    func updateUIView(_ uiView: PDFView, context: Context) { context.coordinator.onTap = onTap }
+    static func dismantleUIView(_ uiView: PDFView, coordinator: Coordinator) { uiView.document = nil }
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        let model: ReaderModel
+        var onTap: () -> Void
+        init(model: ReaderModel, onTap: @escaping () -> Void) { self.model = model; self.onTap = onTap }
+        @objc func tapped() { onTap() }
+        @objc func doubleTapped() {}
+        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+            // A tap that dismisses selected text should keep annotation tools available.
+            (model.view?.currentSelection?.string ?? "").isEmpty
+        }
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool { true }
+    }
 }
 
 struct PDFReaderView: View {
@@ -123,6 +147,7 @@ struct PDFReaderView: View {
     @State private var password = ""
     @State private var sharing = false
     @State private var removeConfirmation = false
+    @State private var controlsVisible = true
     init(paper: Paper, url: URL, onSave: @escaping () -> Void) {
         self.paper = paper; self.onSave = onSave
         _model = StateObject(wrappedValue: ReaderModel(url: url, id: paper.id))
@@ -130,7 +155,7 @@ struct PDFReaderView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                if showingSearch {
+                if controlsVisible && showingSearch {
                     HStack(spacing: 12) {
                         Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
                         TextField("搜索 PDF", text: $model.search).textInputAutocapitalization(.never).autocorrectionDisabled().accessibilityIdentifier("pdf-search")
@@ -147,16 +172,23 @@ struct PDFReaderView: View {
                         SecureField("PDF 密码", text: $password).textFieldStyle(.roundedBorder).frame(maxWidth: 280)
                         Button("解锁") { model.unlock(password) }.buttonStyle(.borderedProminent)
                     }.frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else { PDFCanvas(model: model).accessibilityIdentifier("pdf-canvas") }
-                HStack {
+                } else {
+                    PDFCanvas(model: model) {
+                        withAnimation(.easeInOut(duration: 0.2)) { controlsVisible.toggle() }
+                    }
+                    .accessibilityIdentifier("pdf-canvas")
+                    .accessibilityAction(named: controlsVisible ? "隐藏工具栏" : "显示工具栏") { controlsVisible.toggle() }
+                }
+                if controlsVisible { HStack {
                     Button { model.go(model.page - 1) } label: { Image(systemName: "chevron.left") }.disabled(model.page <= 0).accessibilityLabel("上一页")
                     Spacer()
                     Button { showingThumbnails = true } label: { Text("\(model.count == 0 ? 0 : model.page + 1) / \(model.count)").font(.subheadline.monospacedDigit()) }.accessibilityIdentifier("pdf-page-count")
                     Spacer()
                     Button { model.go(model.page + 1) } label: { Image(systemName: "chevron.right") }.disabled(model.page + 1 >= model.count).accessibilityLabel("下一页")
-                }.padding(.horizontal, 25).padding(.vertical, 15).background(.bar)
+                }.padding(.horizontal, 25).padding(.vertical, 15).background(.bar) }
             }
             .navigationTitle(paper.name).navigationBarTitleDisplayMode(.inline)
+            .toolbar(controlsVisible ? .visible : .hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { Button("完成") { finish() } }
                 ToolbarItemGroup(placement: .topBarTrailing) {

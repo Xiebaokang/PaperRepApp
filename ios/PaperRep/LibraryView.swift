@@ -144,16 +144,18 @@ struct LibraryView: View {
                     Spacer(); Text("已选择 \(selected.count) 项").foregroundStyle(.secondary)
                 }.font(.subheadline).padding(.horizontal).padding(.vertical, 8)
             }
-            if rows.isEmpty {
-                VStack(spacing: 18) {
-                    Image(systemName: query.isEmpty ? "folder" : "magnifyingglass").font(.system(size: 43, weight: .ultraLight)).foregroundStyle(Color.paperGreen.opacity(0.65))
-                    Text(query.isEmpty ? "暂无论文" : "无搜索结果").font(.headline).fontWeight(.regular).foregroundStyle(.secondary)
-                    if !query.isEmpty && mode == .folders && !LibraryPath.isMonth(folder) { Text("进入月份或切换到所有论文后搜索").font(.caption).foregroundStyle(.secondary) }
-                    Button(query.isEmpty ? "添加论文" : "清除搜索") { if query.isEmpty { add() } else { search = ""; query = "" } }.buttonStyle(.bordered)
-                }.frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .dropDestination(for: URL.self) { urls, _ in routeImport(urls); return true }
-            } else {
+            GeometryReader { geometry in
                 List {
+                    if rows.isEmpty {
+                        VStack(spacing: 18) {
+                            Image(systemName: query.isEmpty ? "folder" : "magnifyingglass").font(.system(size: 43, weight: .ultraLight)).foregroundStyle(Color.paperGreen.opacity(0.65))
+                            Text(query.isEmpty ? "暂无论文" : "无搜索结果").font(.headline).fontWeight(.regular).foregroundStyle(.secondary)
+                            if !query.isEmpty && mode == .folders && !LibraryPath.isMonth(folder) { Text("进入月份或切换到所有论文后搜索").font(.caption).foregroundStyle(.secondary) }
+                            Button(query.isEmpty ? "添加论文" : "清除搜索") { if query.isEmpty { add() } else { search = ""; query = "" } }.buttonStyle(.bordered)
+                        }.frame(maxWidth: .infinity, minHeight: max(0, geometry.size.height - 32))
+                            .listRowSeparator(.hidden).listRowBackground(Color.clear)
+                            .dropDestination(for: URL.self) { urls, _ in routeImport(urls); return true }
+                    }
                     ForEach(rows) { row in
                         Button { open(row) } label: { rowView(row) }
                             .buttonStyle(.plain)
@@ -164,6 +166,13 @@ struct LibraryView: View {
                             .dropDestination(for: URL.self) { urls, _ in routeImport(urls, target: row.folder?.id); return true }
                     }
                 }.listStyle(.plain).scrollContentBackground(.hidden).scrollDismissesKeyboard(.interactively)
+                    .accessibilityIdentifier("library-list")
+                    .refreshable {
+                        guard !store.busy else { return }
+                        searchFocused = false
+                        if store.connected { await store.synchronize() }
+                        else { store.error = "请先在设置中连接 GitHub 仓库。" }
+                    }
             }
             HStack {
                 Text("\(rows.count) 个项目").foregroundStyle(.secondary)
