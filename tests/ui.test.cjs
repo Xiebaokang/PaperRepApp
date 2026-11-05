@@ -13,7 +13,10 @@ test('desktop UI: navigation, import, debounced scoped search, multi-select, del
   await fs.mkdir('test-results', { recursive: true });
   const lib = new Library(path.join(userData, 'library.json'), async () => {});
   await lib.init(); await lib.configure({ root, remote: '' });
-  const app = await electron.launch({ args: ['.'], cwd: path.join(__dirname, '..'), env: { ...process.env, ELECTRON_RUN_AS_NODE: '', PAPERREP_USER_DATA: userData } });
+  const env = { ...process.env, PAPERREP_USER_DATA: userData };
+  // On Windows an empty value still enables Electron's Node mode.
+  delete env.ELECTRON_RUN_AS_NODE;
+  const app = await electron.launch({ args: ['.'], cwd: path.join(__dirname, '..'), env });
   t.after(async () => { await app.close(); await fs.rm(base, { recursive: true, force: true }); });
   const page = await app.firstWindow();
   const errors = []; page.on('pageerror', e => errors.push(e.message));
