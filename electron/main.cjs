@@ -11,7 +11,7 @@ app.whenReady().then(async () => {
   let initError;
   try { await library.init(); } catch (e) { initError = e.message; library.state.error = initError; }
   const createWindow = () => {
-    window = new BrowserWindow({ width: 1240, height: 820, minWidth: 960, minHeight: 720, backgroundColor: '#f7f8fa',
+    window = new BrowserWindow({ width: 960, height: 720, minWidth: 960, minHeight: 720, backgroundColor: '#f7f8fa',
       title: 'PaperRep', titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
       trafficLightPosition: { x: 20, y: 20 }, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
     window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
@@ -55,12 +55,12 @@ app.whenReady().then(async () => {
       return { data: result };
     } catch (e) { return { error: e.message }; }
   });
-  Menu.setApplicationMenu(Menu.buildFromTemplate([
+  Menu.setApplicationMenu(process.platform === 'darwin' ? Menu.buildFromTemplate([
     ...(process.platform === 'darwin' ? [{ label: 'PaperRep', submenu: [{ role: 'about' }, { type: 'separator' }, { role: 'hide' }, { role: 'hideOthers' }, { type: 'separator' }, { role: 'quit' }] }] : []),
     { label: '编辑', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
     { label: '视图', submenu: [{ role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { role: 'togglefullscreen' }] },
     { label: '窗口', submenu: [{ role: 'minimize' }, { role: 'close' }] }
-  ]));
+  ]) : null);
   createWindow();
   if (library.config.root && !initError) library.sync().catch(() => {});
   // This checks local saves only; idle time never triggers a remote sync.
