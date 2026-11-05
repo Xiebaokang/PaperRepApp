@@ -17,7 +17,12 @@ test('desktop UI: navigation, import, debounced scoped search, multi-select, del
   // On Windows an empty value still enables Electron's Node mode.
   delete env.ELECTRON_RUN_AS_NODE;
   const app = await electron.launch({ args: ['.'], cwd: path.join(__dirname, '..'), env });
-  t.after(async () => { await app.close(); await fs.rm(base, { recursive: true, force: true }); });
+  t.after(async () => {
+    const closed = app.waitForEvent('close');
+    await app.evaluate(({ app }) => app.exit(0)).catch(() => {});
+    await closed;
+    await fs.rm(base, { recursive: true, force: true });
+  });
   const page = await app.firstWindow();
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.waitForSelector('#busy-overlay', { state: 'hidden' });
@@ -77,5 +82,14 @@ test('desktop UI: navigation, import, debounced scoped search, multi-select, del
   assert.match(await page.locator('#root-label').textContent(), /papers/);
   await page.screenshot({ path: 'test-results/settings.png' });
   await page.locator('#settings-dialog .close-dialog').first().click();
+  const rowCount = await page.locator('.file-row').count();
+  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].close());
+  assert.deepEqual(await app.evaluate(({ BrowserWindow }) => {
+    const windows = BrowserWindow.getAllWindows();
+    return { count: windows.length, visible: windows[0].isVisible() };
+  }), { count: 1, visible: false });
+  await app.evaluate(({ app }) => app.emit('activate'));
+  assert.equal(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isVisible()), true);
+  assert.equal(await page.locator('.file-row').count(), rowCount);
   assert.deepEqual(errors, []);
 });
