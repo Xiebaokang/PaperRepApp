@@ -5,6 +5,9 @@ import PDFKit
 final class PaperRepTests: XCTestCase {
     var base: URL!
     var disk: LibraryDisk!
+    func testHostUsesIsolatedLibrary() {
+        XCTAssertTrue(ProcessInfo.processInfo.arguments.contains("--ui-testing"), "Tests must not initialize the production library or its GitHub connection")
+    }
     override func setUpWithError() throws {
         base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         disk = LibraryDisk(root: base.appendingPathComponent("Library"), support: base.appendingPathComponent("Support"))

@@ -20,7 +20,7 @@ struct LibraryView: View {
     @AppStorage("sortDescending") private var descending = false
     @State private var folder = ""
     @State private var search = ""
-    @State private var searching = false
+    @FocusState private var searchFocused: Bool
     @State private var query = ""
     @State private var selected: Set<String> = []
     @State private var selecting = false
@@ -52,7 +52,7 @@ struct LibraryView: View {
                         Button { showingSettings = true } label: { Image(systemName: "gearshape") }.accessibilityLabel("资料库设置")
                     }
                     ToolbarItemGroup(placement: .topBarTrailing) {
-                        Button { selecting.toggle(); selected = [] } label: { Image(systemName: selecting ? "checkmark.circle.fill" : "checkmark.circle") }.accessibilityLabel(selecting ? "完成选择" : "多选")
+                        Button { searchFocused = false; selecting.toggle(); selected = [] } label: { Image(systemName: selecting ? "checkmark.circle.fill" : "checkmark.circle") }.accessibilityLabel(selecting ? "完成选择" : "多选")
                         Button { add() } label: { Image(systemName: "plus") }.accessibilityLabel("添加论文")
                         Menu {
                             Button("新建文件夹", systemImage: "folder.badge.plus") { monthForImport = false; showingMonth = true }
@@ -61,11 +61,14 @@ struct LibraryView: View {
                         } label: { Image(systemName: "ellipsis.circle") }.accessibilityLabel("更多")
                     }
                 }
-                .searchable(text: $search, isPresented: $searching, prompt: "搜索当前列表")
-                .onChange(of: search) { _, value in if value.isEmpty { searching = false } }
-                .onSubmit(of: .search) { searching = false }
                 .task(id: search) {
-                    do { try await Task.sleep(for: .seconds(1)); guard !Task.isCancelled else { return }; query = search.trimmingCharacters(in: .whitespacesAndNewlines); selected = [] }
+                    do {
+                        try await Task.sleep(for: .seconds(1))
+                        guard !Task.isCancelled else { return }
+                        let next = search.trimmingCharacters(in: .whitespacesAndNewlines)
+                        guard next != query else { return }
+                        query = next; selected = []
+                    }
                     catch {}
                 }
                 .sheet(isPresented: $showingSettings) { SettingsView().environmentObject(store) }
@@ -112,6 +115,21 @@ struct LibraryView: View {
                     }.font(.subheadline).padding(.horizontal).padding(.vertical, 9)
                 }
             }
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                TextField("搜索当前列表", text: $search)
+                    .textInputAutocapitalization(.never).autocorrectionDisabled()
+                    .focused($searchFocused).submitLabel(.search)
+                    .onSubmit { searchFocused = false }
+                    .accessibilityIdentifier("library-search")
+                if !search.isEmpty {
+                    Button { search = ""; query = ""; selected = [] } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }
+                        .accessibilityLabel("清除搜索")
+                }
+            }
+            .font(.subheadline).padding(12)
+            .background(Color(uiColor: .tertiarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 11))
+            .padding(.horizontal).padding(.bottom, 10)
             if let error = store.error {
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: "exclamationmark.circle").foregroundStyle(.orange)
@@ -145,7 +163,7 @@ struct LibraryView: View {
                             }
                             .dropDestination(for: URL.self) { urls, _ in routeImport(urls, target: row.folder?.id); return true }
                     }
-                }.listStyle(.plain).scrollContentBackground(.hidden)
+                }.listStyle(.plain).scrollContentBackground(.hidden).scrollDismissesKeyboard(.interactively)
             }
             HStack {
                 Text("\(rows.count) 个项目").foregroundStyle(.secondary)
@@ -175,13 +193,14 @@ struct LibraryView: View {
             if row.paper == nil { Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary) }
         }.padding(.vertical, 9).contentShape(Rectangle())
     }
-    private func resetSelection() { selected = []; search = ""; query = ""; searching = false }
+    private func resetSelection() { selected = []; search = ""; query = ""; searchFocused = false }
     private func navigate(mode: LibraryMode, path: String = "") { modeValue = mode.rawValue; folder = path; resetSelection() }
     private func open(_ row: LibraryRow, force: Bool = false) {
+        searchFocused = false
         if selecting && !force { if selected.contains(row.id) { selected.remove(row.id) } else { selected.insert(row.id) }; return }
         if let p = row.paper { reader = ReaderItem(paper: p) } else { navigate(mode: .folders, path: row.id) }
     }
-    private func add() { showingImporter = true }
+    private func add() { searchFocused = false; showingImporter = true }
     private func routeImport(_ urls: [URL], target: String? = nil) {
         guard !store.busy, !urls.isEmpty else { return }
         showingImporter = false

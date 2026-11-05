@@ -39,4 +39,6 @@ xcodebuild -project ios/PaperRep.xcodeproj -scheme PaperRep \
 
 单元测试覆盖 Git blob 哈希、路径及文件名校验、原子批量导入、删除恢复、多端冲突、PDF 批注保存，以及模拟 GitHub API 的非强制提交与拒绝保护。UI 测试覆盖列表、阅读翻页、全文搜索和年月创建。测试只使用生成的 PDF 与虚拟令牌，不连接真实仓库。
 
-API 依据：[Apple PDFKit](https://developer.apple.com/documentation/pdfkit)、[GitHub Git Database](https://docs.github.com/en/rest/guides/using-the-rest-api-to-interact-with-your-git-database)。真实令牌连接、真机签名安装及第三方文件提供方行为需在相应账号和设备上验证。
+2026-11-05 已在 iPhone 16 Pro（iOS 26.5.2）完成真机验证：12 项核心/API 模拟测试和 1 项完整界面测试通过，包括搜索、多选删除和撤销。测试 host 与界面测试都使用独立临时资料库；正常运行不带测试参数。首次真机安装后需在「设置 → 通用 → VPN 与设备管理」信任自己的开发者证书，并保持手机解锁以启动测试。签名团队通过本机 Xcode 或构建参数配置，不提交个人签名信息。
+
+API 依据：[Apple PDFKit](https://developer.apple.com/documentation/pdfkit)、[GitHub Git Database](https://docs.github.com/en/rest/guides/using-the-rest-api-to-interact-with-your-git-database)。真实令牌同步与第三方文件提供方行为仍需在相应账号和设备上验证。
