@@ -1,0 +1,27 @@
+{
+  "name": "paperrep",
+  "version": "1.0.0",
+  "description": "A quiet home for your papers",
+  "main": "electron/main.cjs",
+  "private": true,
+  "author": "PaperRep",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test tests/library.test.cjs tests/git-process.test.cjs",
+    "test:ui": "node --test tests/ui.test.cjs",
+    "build:mac": "electron-builder --mac dmg --arm64 --x64",
+    "build:win": "electron-builder --win nsis --x64",
+    "pack": "electron-builder --dir --config.electronDist=node_modules/electron/dist"
+  },
+  "devDependencies": { "electron": "^43.0.0", "electron-builder": "^26.0.12", "@playwright/test": "^1.58.0" },
+  "build": {
+    "appId": "com.paperrep.desktop",
+    "productName": "PaperRep",
+    "directories": { "output": "release" },
+    "files": ["electron/**", "ui/**", "package.json"],
+    "mac": { "category": "public.app-category.productivity", "target": "dmg", "icon": "build/icon.png" },
+    "win": { "target": "nsis", "icon": "build/icon.png" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true }
+  }
+}

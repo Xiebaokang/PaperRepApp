@@ -1,0 +1,11 @@
+node_modules/
+release/
+.tools/
+test-results/
+.DS_Store
+*.log
+Thumbs.db
+.env
+.env.*
+!.env.example
+*.pdf

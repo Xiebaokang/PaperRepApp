@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>PaperRep</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <aside class="sidebar">
+      <div class="window-space"></div>
+      <div class="brand"><span class="brand-symbol" data-icon="brand"></span><span>PaperRep</span></div>
+      <nav aria-label="展示方式">
+        <button class="nav-item active" id="nav-folders"><span data-icon="folder"></span>文件夹<span class="nav-tail" data-icon="chevron"></span></button>
+        <button class="nav-item" id="nav-all"><span data-icon="stack"></span>所有论文<span id="nav-count" class="nav-count">0</span></button>
+      </nav>
+      <div class="sidebar-divider"></div>
+      <div class="section-label">年份<button id="side-create" class="icon-button" title="创建年月文件夹" aria-label="创建年月文件夹" data-icon="plus"></button></div>
+      <div id="year-nav" class="year-nav"></div>
+      <div class="sidebar-bottom">
+        <div id="sync-card" class="sync-card"><div class="sync-card-title"><span class="status-dot"></span><span id="sync-title">本地资料库</span><span data-icon="github"></span></div><p id="sync-detail" hidden></p><button id="sync-button"><span data-icon="refresh"></span><span id="sync-label">设置资料库</span></button></div>
+        <button id="settings-button" class="settings-button"><span data-icon="settings"></span>资料库设置<span data-icon="chevron"></span></button>
+      </div>
+    </aside>
+    <main>
+      <div class="topbar" aria-hidden="true"></div>
+      <div class="main-content">
+        <header class="page-heading"><h1>我的论文</h1><button id="add-button" class="primary"><span data-icon="plus"></span>添加论文</button></header>
+        <div class="stats"><div class="stat"><span class="stat-icon green" data-icon="file"></span><div><span class="stat-label">收藏论文</span><div class="stat-number" id="stat-papers">0 <small>篇</small></div></div></div><div class="stat"><span class="stat-icon amber" data-icon="folder"></span><div><span class="stat-label">归档月份</span><div class="stat-number" id="stat-months">0 <small>个</small></div></div></div><div class="stat"><span class="stat-icon blue" data-icon="database"></span><div><span class="stat-label">资料库大小</span><div class="stat-number" id="stat-size">0 <small>KB</small></div></div></div></div>
+        <section class="library-panel" aria-label="论文列表">
+          <div class="panel-heading"><div id="breadcrumbs" class="breadcrumbs"></div><div class="panel-actions"><button id="new-folder" class="text-button"><span data-icon="folder-plus"></span>新建文件夹</button><div class="view-switch" aria-label="视图"><button id="view-folders" title="文件夹模式" aria-label="文件夹模式" data-icon="folder"></button><button id="view-all" title="所有论文" aria-label="所有论文" data-icon="list"></button></div></div></div>
+          <div class="list-toolbar"><label class="search"><span data-icon="search"></span><input id="search" type="search" placeholder="搜索当前列表…" autocomplete="off" aria-label="搜索当前列表中的论文"><kbd>⌘ K</kbd></label><label class="sort"><span data-icon="sort"></span><select id="sort" aria-label="排序方式"><option value="name">名称</option><option value="date">修改日期</option></select></label><button id="sort-direction" class="icon-button" title="切换排序方向" aria-label="切换排序方向" data-icon="arrow-down"></button></div>
+          <div id="error-banner" class="error-banner" hidden><span data-icon="alert"></span><div><p id="error-message"></p></div><button id="retry" class="text-button">重试</button></div>
+          <div class="table-header"><label class="check-wrap"><input id="select-all" type="checkbox" aria-label="全选当前列表"></label><button id="name-heading">名称</button><span>修改日期</span><span>大小</span><span></span></div>
+          <div id="file-list" class="file-list" tabindex="0" aria-label="文件和文件夹列表"></div>
+          <div id="empty" class="empty" hidden><div class="empty-illustration"><span class="orbit orbit-one"></span><span class="orbit orbit-two"></span><div data-icon="folder" class="empty-folder"></div><span class="empty-plus" data-icon="plus"></span></div><h2 id="empty-title">暂无论文</h2><p id="empty-description" hidden></p><button id="empty-action" class="primary">设置资料库<span data-icon="arrow-right"></span></button></div>
+          <footer class="list-footer"><span id="list-count">0 个项目</span><span id="selection-count"></span></footer>
+          <div id="drop-overlay" class="drop-overlay" hidden><span data-icon="download"></span><strong id="drop-label">松开以添加论文</strong></div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <div id="context-menu" class="context-menu" hidden role="menu"><button id="context-open" role="menuitem"><span data-icon="open"></span>打开</button><div class="menu-divider"></div><button id="context-delete" class="danger" role="menuitem"><span data-icon="trash"></span>移至废纸篓<span id="context-count"></span></button></div>
+  <dialog id="settings-dialog"><form id="settings-form"><div class="dialog-heading"><span class="dialog-icon" data-icon="settings"></span><button type="button" class="icon-button close-dialog" aria-label="关闭" data-icon="x"></button></div><h2>资料库设置</h2><label class="field-label">论文存储位置</label><button type="button" id="choose-root" class="path-picker"><span data-icon="folder"></span><span id="root-label">选择存储文件夹</span><span data-icon="chevron"></span></button><label class="field-label" for="remote">GitHub 仓库 <span>可选</span></label><input id="remote" class="field-input" placeholder="https://github.com/you/papers.git" spellcheck="false"><p class="field-help">使用系统 Git 凭据或 SSH 密钥。</p><p id="settings-error" class="form-error" hidden></p><div class="dialog-footer"><button type="button" class="secondary close-dialog">取消</button><button class="primary" type="submit">保存<span data-icon="arrow-right"></span></button></div></form></dialog>
+  <dialog id="month-dialog"><form id="month-form"><div class="dialog-heading"><span class="dialog-icon amber" data-icon="folder-plus"></span><button type="button" class="icon-button close-dialog" aria-label="关闭" data-icon="x"></button></div><h2 id="month-title">新建文件夹</h2><p id="month-description" class="dialog-description" hidden></p><label for="month-input" class="field-label">归档年月</label><input id="month-input" class="field-input month-input" type="month" required min="1900-01" max="9999-12"><p id="month-error" class="form-error" hidden></p><div class="dialog-footer"><button type="button" class="secondary close-dialog">取消</button><button id="month-submit" class="primary" type="submit">创建文件夹<span data-icon="arrow-right"></span></button></div></form></dialog>
+  <dialog id="busy-overlay" class="busy-overlay" hidden aria-label="同步进度" aria-live="polite"><div class="busy-pill"><span class="spinner"></span><div><strong id="busy-phase">正在同步</strong></div></div></dialog>
+  <div id="toast" class="toast" hidden role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
