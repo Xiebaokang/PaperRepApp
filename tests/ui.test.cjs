@@ -41,7 +41,9 @@ test('desktop UI: navigation, import, debounced scoped search, multi-select, del
   await page.locator('.file-row').first().dblclick();
   assert.match(await app.evaluate(() => globalThis.openedPdf), /Attention Is All You Need\.pdf$/);
   const snapshot = await page.evaluate(async () => (await window.paperrep.invoke('state')).data);
-  await app.evaluate(({ BrowserWindow }, snapshot) => BrowserWindow.getAllWindows()[0].webContents.send('library-state', { ...snapshot, busy: true, phase: '同步 GitHub' }), snapshot);
+  await app.evaluate(({ BrowserWindow }, snapshot) => BrowserWindow.getAllWindows()[0].webContents.send('library-state', { ...snapshot, connected: true, remote: 'https://gitee.com/you/papers.git' }), snapshot);
+  await page.waitForFunction(() => document.getElementById('sync-title').textContent === '已连接 Gitee');
+  await app.evaluate(({ BrowserWindow }, snapshot) => BrowserWindow.getAllWindows()[0].webContents.send('library-state', { ...snapshot, busy: true, phase: '同步仓库' }), snapshot);
   await page.waitForSelector('#busy-overlay[open]');
   assert.equal(await page.locator('#app').evaluate(el => el.inert), true);
   await page.keyboard.press('Escape'); assert.equal(await page.locator('#busy-overlay').isVisible(), true);
@@ -80,6 +82,7 @@ test('desktop UI: navigation, import, debounced scoped search, multi-select, del
   await assert.rejects(fs.access(newSource));
   await page.locator('#settings-button').click();
   assert.match(await page.locator('#root-label').textContent(), /papers/);
+  assert.match(await page.locator('label[for="remote"]').textContent(), /Gitee/);
   await page.screenshot({ path: 'test-results/settings.png' });
   await page.locator('#settings-dialog .close-dialog').first().click();
   const rowCount = await page.locator('.file-row').count();

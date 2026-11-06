@@ -51,7 +51,7 @@ app.whenReady().then(async () => {
         case 'createFolder': result = await library.createFolder(data); break;
         case 'delete': {
           if (!Array.isArray(data) || !data.length) throw new Error('请选择文件。');
-          const answer = await dialog.showMessageBox(window, { type: 'warning', title: '移至废纸篓', message: `将选中的 ${data.length} 个项目移至废纸篓？`, detail: '文件夹中的论文也会一并移除，并同步至 GitHub。', buttons: ['取消', '移至废纸篓'], defaultId: 0, cancelId: 0 });
+          const answer = await dialog.showMessageBox(window, { type: 'warning', title: '移至废纸篓', message: `将选中的 ${data.length} 个项目移至废纸篓？`, detail: '文件夹中的论文也会一并移除，并同步至远程仓库。', buttons: ['取消', '移至废纸篓'], defaultId: 0, cancelId: 0 });
           if (answer.response === 1) result = await library.remove(data); else result = { canceled: true }; break;
         }
         case 'sync': result = await library.sync(); break;

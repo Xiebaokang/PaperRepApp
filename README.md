@@ -70,3 +70,5 @@ macOS 与 Windows 安装包建议分别在对应系统构建。`scripts/github-b
 ## 切换到 Gitee
 
 桌面端在资料库设置中选择新的空文件夹，再填写 Gitee 仓库地址。旧 GitHub 资料库原样保留；如需所有历史论文，可先在 Gitee 导入原 GitHub 仓库，再连接新文件夹。不会自动修改旧仓库 origin 或上传到其他地址。iPhone 可直接在设置中更换地址和令牌，保留手机本地已有论文并与新仓库合并，分支可留空。源码仓库继续保留在 GitHub。
+
+Windows 和 macOS 共用桌面同步代码，都支持 Gitee HTTPS 和 SSH 地址。Windows 已有源码目录可在 PowerShell 中运行 `git pull`、`npm ci`、`npm run build:win`，安装 `release/` 中的新安装包后，在资料库设置中连接 Gitee。桌面版使用系统 Git 凭据或 SSH 密钥，手机内保存的令牌不会自动同步到 Windows。

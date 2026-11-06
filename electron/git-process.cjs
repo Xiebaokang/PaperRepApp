@@ -45,7 +45,7 @@ function gitError(error, operation) {
   if (error.code === 'ENOENT') return new Error('未找到 Git，请安装 Git 后重新启动应用。');
   if (error.timedOut) return new Error(`${action}超时，本地更改已保留。请检查网络后重试。`);
   const detail = (error.stderr || error.stdout || error.message || '').replace(/https?:\/\/[^\s/@]+@/g, 'https://').trim();
-  if (/authentication failed|could not read Username|permission denied \(publickey\)|repository not found|\b403\b|write access.*not granted/i.test(detail)) return new Error('无法访问 远程仓库，请检查登录凭据和仓库写入权限。');
+  if (/authentication failed|could not read Username|permission denied \(publickey\)|repository not found|\b403\b|write access.*not granted/i.test(detail)) return new Error('无法访问远程仓库，请检查登录凭据和仓库写入权限。');
   if (/could not resolve host|failed to connect|connection.*(reset|refused|timed out)|network is unreachable|RPC failed|curl \d+|TLS|SSL|HTTP\/2|Operation too slow/i.test(detail)) return new Error('仓库连接中断，本地更改已保留。请检查网络后重试。');
   if (/non-fast-forward|fetch first|rejected.*stale/i.test(detail)) return new Error('远程仓库有新的更改，请重新同步。');
   if (error.outputExceeded) return new Error('Git 输出超过限制，请检查仓库状态后重试。');
