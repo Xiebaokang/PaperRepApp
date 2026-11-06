@@ -214,11 +214,13 @@ $('file-list').oncontextmenu = e => {
   $('context-open').hidden = selected.size !== 1;
   $('context-count').textContent = selected.size > 1 ? selected.size : '';
   $('context-menu').hidden = false;
-  $('context-menu').style.left = `${Math.min(e.clientX, innerWidth - 200)}px`;
-  $('context-menu').style.top = `${Math.min(e.clientY, innerHeight - 95)}px`;
-  $('context-open').focus();
+  const bounds = $('context-menu').getBoundingClientRect();
+  $('context-menu').style.left = `${Math.max(8, Math.min(e.clientX, innerWidth - bounds.width - 8))}px`;
+  $('context-menu').style.top = `${Math.max(8, Math.min(e.clientY, innerHeight - bounds.height - 8))}px`;
+  (selected.size === 1 ? $('context-open') : $('context-reveal')).focus();
 };
 $('context-open').onclick = () => { const row = rows.find(r => selected.has(r.id)); hideContext(); openRow(row).catch(handleError); };
+$('context-reveal').onclick = () => { const ids = [...selected]; hideContext(); call('reveal', ids).catch(handleError); };
 $('context-delete').onclick = async () => { hideContext(); try { const result = await call('delete', [...selected]); if (!result?.canceled) { selected.clear(); renderList(); } } catch (e) { handleError(e); } };
 document.addEventListener('click', e => { if (!e.target.closest('#context-menu')) hideContext(); });
 document.addEventListener('keydown', e => {
@@ -255,6 +257,7 @@ panel.addEventListener('drop', async e => {
   } catch (e) { handleError(e); }
 });
 if (api) {
+  $('context-reveal').innerHTML = icon('folder') + (api.platform === 'darwin' ? '在 Finder 中查看' : '在资源管理器中查看');
   if (api.platform === 'win32') { document.body.classList.add('windows'); document.querySelector('.search kbd').textContent = 'Ctrl K'; }
   api.onState(next => { state = next; if (state.busy) hideContext(); render(); });
   call('state').then(next => { state = next; render(); }).catch(handleError);

@@ -59,7 +59,13 @@ app.whenReady().then(async () => {
           if (typeof data !== 'string' || data.split('/').length !== 3) throw new Error('请选择 PDF 文件。');
           const error = await shell.openPath(await library.safePath(data)); if (error) throw new Error(error); break;
         }
-        case 'reveal': if (library.config.root) shell.showItemInFolder(library.config.root); break;
+        case 'reveal': {
+          if (!Array.isArray(data) || !data.length || data.length > 500) throw new Error('请选择文件或文件夹。');
+          // Validate the whole selection before opening any file manager windows.
+          const targets = await Promise.all([...new Set(data)].map(id => library.safePath(id)));
+          for (const target of targets) shell.showItemInFolder(target);
+          break;
+        }
       }
       return { data: result };
     } catch (e) { return { error: e.message }; }

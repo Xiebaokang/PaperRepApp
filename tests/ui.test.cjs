@@ -31,8 +31,20 @@ test('desktop UI: navigation, import, debounced scoped search, multi-select, del
   const sources = [];
   for (const name of names) { const file = path.join(base, name + '.pdf'); await fs.writeFile(file, '%PDF-1.7\n\0test fixture\n%%EOF'); sources.push(file); }
   await page.evaluate(async files => { const result = await window.paperrep.invoke('import', { files, month: '2026/11' }); if (result.error) throw new Error(result.error); }, sources);
+  await app.evaluate(({ shell }) => {
+    globalThis.revealedItems = [];
+    shell.showItemInFolder = target => globalThis.revealedItems.push(target);
+  });
+  const revealLabel = process.platform === 'darwin' ? '在 Finder 中查看' : '在资源管理器中查看';
+  await page.locator('.file-row[data-id="2026"]').click({ button: 'right' });
+  assert.equal(await page.locator('#context-reveal').textContent(), revealLabel);
+  await page.locator('#context-reveal').click();
+  assert.deepEqual(await app.evaluate(() => globalThis.revealedItems), [path.join(root, '2026')]);
   await page.locator('.file-row').filter({ hasText: '2026' }).dblclick();
   await page.waitForSelector('.file-row[data-id="2026/11"]');
+  await page.locator('.file-row[data-id="2026/11"]').click({ button: 'right' });
+  await page.locator('#context-reveal').click();
+  assert.equal(await app.evaluate(() => globalThis.revealedItems.at(-1)), path.join(root, '2026', '11'));
   await page.locator('.file-row[data-id="2026/11"]').dblclick();
   await page.waitForSelector('.file-row[data-kind="paper"]');
   assert.equal(await page.locator('.file-row').count(), 6);
@@ -40,6 +52,16 @@ test('desktop UI: navigation, import, debounced scoped search, multi-select, del
   await app.evaluate(({ shell }) => { shell.openPath = async target => { globalThis.openedPdf = target; return ''; }; });
   await page.locator('.file-row').first().dblclick();
   assert.match(await app.evaluate(() => globalThis.openedPdf), /Attention Is All You Need\.pdf$/);
+  await page.locator('.file-row').first().click({ button: 'right' });
+  await page.locator('#context-reveal').click();
+  assert.equal(await app.evaluate(() => globalThis.revealedItems.at(-1)), path.join(root, '2026', '11', names[0] + '.pdf'));
+  assert.equal(await page.locator('#context-menu').isVisible(), false);
+  const revealedBefore = await app.evaluate(() => globalThis.revealedItems.length);
+  for (const invalid of [[], null, '../outside.pdf', ['../outside.pdf'], ['2026/11/Attention Is All You Need.pdf', '2026/11/missing.pdf']]) {
+    const result = await page.evaluate(ids => window.paperrep.invoke('reveal', ids), invalid);
+    assert(result.error, 'Invalid or missing paths must be refused');
+  }
+  assert.equal(await app.evaluate(() => globalThis.revealedItems.length), revealedBefore);
   const snapshot = await page.evaluate(async () => (await window.paperrep.invoke('state')).data);
   await app.evaluate(({ BrowserWindow }, snapshot) => BrowserWindow.getAllWindows()[0].webContents.send('library-state', { ...snapshot, connected: true, remote: 'https://gitee.com/you/papers.git' }), snapshot);
   await page.waitForFunction(() => document.getElementById('sync-title').textContent === '已连接 Gitee');
@@ -66,6 +88,13 @@ test('desktop UI: navigation, import, debounced scoped search, multi-select, del
   assert.equal(await page.locator('.file-row.selected').count(), 2);
   await b.click({ button: 'right' });
   assert.equal(await page.locator('#context-menu').isVisible(), true);
+  const selectedIds = await page.locator('.file-row.selected').evaluateAll(rows => rows.map(row => row.dataset.id));
+  const multiRevealBefore = await app.evaluate(() => globalThis.revealedItems.length);
+  await page.locator('#context-reveal').click();
+  assert.deepEqual((await app.evaluate(() => globalThis.revealedItems.slice(-2))).sort(), selectedIds.map(id => path.join(root, ...id.split('/'))).sort());
+  assert.equal(await app.evaluate(() => globalThis.revealedItems.length), multiRevealBefore + 2);
+  assert.equal(await page.locator('.file-row.selected').count(), 2);
+  await b.click({ button: 'right' });
   await app.evaluate(({ dialog, shell }) => { dialog.showMessageBox = async () => ({ response: 1 }); shell.trashItem = async target => { process.getBuiltinModule('fs').rmSync(target, { recursive: true }); }; });
   await page.locator('#context-delete').click();
   await page.waitForFunction(() => document.querySelectorAll('.file-row').length === 4);
