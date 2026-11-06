@@ -98,7 +98,7 @@ class Library extends EventEmitter {
     return this.lock('连接仓库', async () => {
       if (!root || typeof root !== 'string' || typeof remote !== 'string') throw new Error('请选择存储位置。');
       remote = remote.trim();
-      if (remote && !/^(https:\/\/github\.com\/|git@github\.com:)[\w.-]+\/[\w.-]+(?:\.git)?$/.test(remote)) throw new Error('请输入 GitHub 仓库的 HTTPS 或 SSH 地址。');
+      if (remote && !/^(https:\/\/(?:github|gitee)\.com\/|git@(?:github|gitee)\.com:)[\w.-]+\/[\w.-]+(?:\.git)?$/.test(remote)) throw new Error('请输入 GitHub 或 Gitee 仓库的 HTTPS 或 SSH 地址。');
       root = await fs.realpath(root);
       if ((await fs.lstat(root)).isSymbolicLink()) throw new Error('请选择真实文件夹。');
       const currentRoot = this.config.root;
@@ -149,7 +149,7 @@ class Library extends EventEmitter {
         if (!/\.pdf$/i.test(name) || /[<>:"|?*\\\x00-\x1f]/.test(name) || /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])\./i.test(name)) throw new Error(`文件名无法跨平台使用：${name}`);
         const stat = await fs.lstat(source);
         if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`不是普通 PDF 文件：${name}`);
-        if (stat.size > MAX_PDF) throw new Error(`${name} 超过 95 MB，无法直接同步至 GitHub。`);
+        if (stat.size > MAX_PDF) throw new Error(`${name} 超过 95 MB，无法直接同步至仓库。`);
         const handle = await fs.open(source, 'r');
         try { const header = Buffer.alloc(5); await handle.read(header, 0, 5, 0); if (header.toString() !== '%PDF-') throw new Error(`文件不是有效的 PDF：${name}`); } finally { await handle.close(); }
         const canonical = name.normalize('NFC').toLowerCase();
@@ -204,7 +204,7 @@ class Library extends EventEmitter {
     if (staged.split('\n').some(n => n && !/^\d{4}\//.test(n))) throw new Error('仓库中有论文目录外的暂存更改，请先在 Git 中处理。');
     if (staged) await this.git(['commit', '-m', `PaperRep: update library ${new Date().toISOString()}`]);
     if (!this.config.remote) { await this.scan(); return; }
-    this.state.phase = '同步 GitHub'; this.publish();
+    this.state.phase = '同步仓库'; this.publish();
     const branch = await this.git(['symbolic-ref', '--short', 'HEAD']).catch(() => '');
     if (!branch) throw new Error('仓库处于分离 HEAD 状态，请先切换到一个分支。');
     await this.git(['fetch', '--prune', 'origin']);
@@ -218,7 +218,7 @@ class Library extends EventEmitter {
     this.state.lastSync = Date.now();
     await this.scan();
   }
-  async sync() { if (!this.config.root) return; return this.lock('同步 GitHub', () => this.syncUnlocked()); }
+  async sync() { if (!this.config.root) return; return this.lock('同步仓库', () => this.syncUnlocked()); }
   async poll() {
     if (this.state.busy || !this.config.root) return;
     const previous = this.fingerprint;

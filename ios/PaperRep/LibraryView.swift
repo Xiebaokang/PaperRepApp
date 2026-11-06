@@ -171,7 +171,7 @@ struct LibraryView: View {
                         guard !store.busy else { return }
                         searchFocused = false
                         if store.connected { await store.synchronize() }
-                        else { store.error = "请先在设置中连接 GitHub 仓库。" }
+                        else { store.error = "请先在设置中连接远程仓库。" }
                     }
             }
             HStack {
@@ -282,19 +282,22 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("GitHub 仓库") {
-                    TextField("https://github.com/you/papers.git", text: $address).textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
+                Section("远程仓库") {
+                    TextField("https://gitee.com/you/papers.git", text: $address).textInputAutocapitalization(.never).autocorrectionDisabled().keyboardType(.URL)
                     TextField("默认分支", text: $branch).textInputAutocapitalization(.never).autocorrectionDisabled()
                 }
                 Section {
-                    SecureField("GitHub 访问令牌", text: $token).textInputAutocapitalization(.never).autocorrectionDisabled()
-                } footer: { Text("令牌需有该论文仓库的 Contents 读写权限，保存在本机钥匙串。") }
+                    SecureField("仓库访问令牌", text: $token).textInputAutocapitalization(.never).autocorrectionDisabled()
+                } footer: { Text("GitHub 需 Contents 读写权限；Gitee 需 projects 权限。令牌保存在本机钥匙串。") }
                 if let date = store.syncState.lastSync { LabeledContent("上次同步") { Text(date, style: .relative) } }
                 if let error = store.error { Text(error).foregroundStyle(.red).font(.footnote) }
                 Section { Button("保存并同步") { Task { if await store.configure(address: address, branch: branch, token: token) { dismiss() } } }.disabled(address.isEmpty || token.isEmpty) }
             }.navigationTitle("资料库设置").navigationBarTitleDisplayMode(.inline)
                 .toolbar { ToolbarItem(placement: .cancellationAction) { Button("完成") { dismiss() } } }
-                .onAppear { if let r = store.syncState.repository { address = "https://github.com/\(r.owner)/\(r.name).git"; branch = r.branch }; token = TokenVault.read() }
+                .onChange(of: address) { _, value in
+                    if let repo = try? Repository.parse(value), repo.credentialKey != store.syncState.repository?.credentialKey { token = TokenVault.read(for: repo); branch = "" }
+                }
+                .onAppear { if let r = store.syncState.repository { address = r.address; branch = r.branch }; token = TokenVault.read(for: store.syncState.repository) }
                 .disabled(store.busy).overlay { if store.busy { BusyView(phase: store.phase) } }.interactiveDismissDisabled(store.busy)
         }
     }

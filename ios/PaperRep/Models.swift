@@ -6,21 +6,32 @@ enum PaperError: LocalizedError, Equatable {
     var errorDescription: String? { if case .message(let text) = self { return text }; return nil }
 }
 
+enum RepositoryService: String, Codable, Sendable {
+    case github, gitee
+    var host: String { self == .gitee ? "gitee.com" : "github.com" }
+    var title: String { self == .gitee ? "Gitee" : "GitHub" }
+}
+
 struct Repository: Codable, Equatable, Sendable {
     var owner: String
     var name: String
     var branch: String
-    var identity: String { "\(owner.lowercased())/\(name.lowercased())/\(branch)" }
+    var service: RepositoryService? = nil
+    var provider: RepositoryService { service ?? .github }
+    var credentialKey: String { "\(provider.host)/\(owner.lowercased())/\(name.lowercased())" }
+    var identity: String { credentialKey + "/" + branch }
+    var address: String { "https://\(provider.host)/\(owner)/\(name).git" }
     static func parse(_ address: String, branch: String = "") throws -> Repository {
         var value = address.trimmingCharacters(in: .whitespacesAndNewlines)
-        for prefix in ["https://github.com/", "git@github.com:"] where value.hasPrefix(prefix) { value.removeFirst(prefix.count) }
+        let provider: RepositoryService = value.hasPrefix("https://gitee.com/") || value.hasPrefix("git@gitee.com:") ? .gitee : .github
+        for prefix in ["https://" + provider.host + "/", "git@" + provider.host + ":"] where value.hasPrefix(prefix) { value.removeFirst(prefix.count) }
         if value.hasSuffix(".git") { value.removeLast(4) }
         let parts = value.split(separator: "/", omittingEmptySubsequences: false)
         let allowed = CharacterSet(charactersIn: "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.")
-        guard parts.count == 2, parts.allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." && $0.unicodeScalars.allSatisfy(allowed.contains) }) else { throw PaperError.message("请输入有效的 GitHub 仓库地址。") }
+        guard parts.count == 2, parts.allSatisfy({ !$0.isEmpty && $0 != "." && $0 != ".." && $0.unicodeScalars.allSatisfy(allowed.contains) }) else { throw PaperError.message("请输入有效的 GitHub 或 Gitee 仓库地址。") }
         let branch = branch.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !branch.contains(".."), !branch.contains("@{"), !branch.hasPrefix("/"), !branch.hasSuffix("/"), !branch.contains("//"), !branch.contains("\\"), !branch.contains(" "), !branch.hasSuffix(".lock"), !branch.unicodeScalars.contains(where: { CharacterSet.controlCharacters.contains($0) }) else { throw PaperError.message("分支名称无效。") }
-        return Repository(owner: String(parts[0]), name: String(parts[1]), branch: branch)
+        return Repository(owner: String(parts[0]), name: String(parts[1]), branch: branch, service: provider)
     }
 }
 

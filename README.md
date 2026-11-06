@@ -34,9 +34,9 @@ npm run build:win
 
 ## 第一次使用
 
-点击「设置资料库」，选择空文件夹或已存在的论文 Git 仓库。可填入 GitHub HTTPS / SSH 地址，也可先离线使用。远程仓库需要事先创建，建议设为私有。应用使用系统 Git 的现有认证，不收集或保存 GitHub 密码、令牌。
+点击「设置资料库」，选择空文件夹或已存在的论文 Git 仓库。可填入 GitHub 或 Gitee HTTPS / SSH 地址，也可先离线使用。远程仓库需要事先创建，建议设为私有。应用使用系统 Git 的现有认证，不收集或保存托管平台密码、令牌。
 
-HTTPS 使用系统凭据管理器；SSH 请事先配置 GitHub SSH 密钥，并确认系统 `git fetch` / `git push` 可用。另一设备选择新的空文件夹并连接相同仓库即可克隆。
+HTTPS 使用系统凭据管理器；SSH 请事先配置相应平台的 SSH 密钥，并确认系统 `git fetch` / `git push` 可用。另一设备选择新的空文件夹并连接相同仓库即可克隆。
 
 ## 操作
 
@@ -66,3 +66,7 @@ npm run build:win
 macOS 与 Windows 安装包建议分别在对应系统构建。`scripts/github-build.example.yml` 是可选的 GitHub Actions 构建模板，默认不启用；需要时可放入 `.github/workflows/build.yml`（提交工作流需要对应 GitHub 写入权限）。未配置发行签名和 Apple 公证，正式分发前需设置相应签名。Windows 的系统阅读器、凭据管理器和废纸篓行为需要在 Windows 真机验收。
 
 技术依据：[Electron 安全指南](https://www.electronjs.org/docs/latest/tutorial/security/)、[webUtils 文件拖拽 API](https://www.electronjs.org/docs/latest/api/web-utils)。渲染进程使用沙箱、上下文隔离、严格 CSP 和白名单 IPC。
+
+## 切换到 Gitee
+
+桌面端在资料库设置中选择新的空文件夹，再填写 Gitee 仓库地址。旧 GitHub 资料库原样保留；如需所有历史论文，可先在 Gitee 导入原 GitHub 仓库，再连接新文件夹。不会自动修改旧仓库 origin 或上传到其他地址。iPhone 可直接在设置中更换地址和令牌，保留手机本地已有论文并与新仓库合并，分支可留空。源码仓库继续保留在 GitHub。

@@ -36,12 +36,15 @@ import UIKit
     }
     private func syncUnlocked() async throws {
         guard let repo = syncState.repository else { return }
-        let token = TokenVault.read()
-        guard !token.isEmpty else { throw PaperError.message("请在设置中填写 GitHub 令牌。") }
-        let service = GitHubSync(disk: disk, repository: repo, token: token) { [weak self] message in
-            await self?.updatePhase(message)
+        let token = TokenVault.read(for: repo)
+        guard !token.isEmpty else { throw PaperError.message("请在设置中填写仓库访问令牌。") }
+        let progress: @Sendable (String) async -> Void = { [weak self] message in await self?.updatePhase(message) }
+        let (resolved, baseline): (Repository, [String: String])
+        if repo.provider == .gitee {
+            (resolved, baseline) = try await GiteeSync(disk: disk, repository: repo, token: token, progress: progress).synchronize(baseline: syncState.baseline)
+        } else {
+            (resolved, baseline) = try await GitHubSync(disk: disk, repository: repo, token: token, progress: progress).synchronize(baseline: syncState.baseline)
         }
-        let (resolved, baseline) = try await service.synchronize(baseline: syncState.baseline)
         syncState.repository = resolved; syncState.baseline = baseline; syncState.lastSync = Date()
         try disk.saveState(syncState)
     }
@@ -52,13 +55,21 @@ import UIKit
         await operation("连接仓库") {
             var repo = try Repository.parse(address, branch: branch)
             if let existing = syncState.repository {
-                if repo.branch.isEmpty { repo.branch = existing.branch }
-                guard existing.identity == repo.identity || syncState.baseline.isEmpty && snapshot.papers.isEmpty else { throw PaperError.message("当前资料库已连接其他仓库，请先保留该仓库设置。") }
+                if repo.branch.isEmpty && repo.credentialKey == existing.credentialKey { repo.branch = existing.branch }
             }
-            guard !token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw PaperError.message("请输入 GitHub 令牌。") }
-            try TokenVault.save(token.trimmingCharacters(in: .whitespacesAndNewlines))
-            syncState.repository = repo
-            try disk.saveState(syncState)
+            guard !token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw PaperError.message("请输入仓库访问令牌。") }
+            var next = syncState
+            if syncState.repository?.identity != repo.identity {
+                // Start a fresh three-way merge; local files are additions, never old deletions.
+                if syncState.repository != nil {
+                    try JSONEncoder().encode(syncState).write(to: disk.support.appendingPathComponent("previous-sync.json"), options: .atomic)
+                }
+                next.baseline = [:]; next.lastSync = nil
+            }
+            try TokenVault.save(token.trimmingCharacters(in: .whitespacesAndNewlines), for: repo)
+            next.repository = repo
+            try disk.saveState(next)
+            syncState = next
             saved = true
             try await syncUnlocked()
         }

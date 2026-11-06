@@ -63,7 +63,7 @@ function render() {
   $('new-folder').hidden = mode !== 'folders';
   $('year-nav').innerHTML = state.folders.filter(f => f.level === 'year').sort((a, b) => b.name.localeCompare(a.name)).map(f => `<button class="year-button ${mode === 'folders' && current.startsWith(f.id) ? 'selected' : ''}" data-year="${f.id}">${icon('folder')}<span>${f.name}</span><span>${state.papers.filter(p => p.id.startsWith(f.id + '/')).length}</span></button>`).join('');
   $('breadcrumbs').innerHTML = `<span class="crumb-icon">${icon(mode === 'all' ? 'stack' : 'folder')}</span><button data-path="">${mode === 'all' ? '所有论文' : '全部文件夹'}</button>` + (mode === 'folders' && current ? current.split('/').map((part, i, parts) => `${icon('chevron')}<button data-path="${parts.slice(0, i + 1).join('/')}">${part}${i === 0 ? ' 年' : ' 月'}</button>`).join('') : '');
-  $('sync-title').textContent = state.error ? '同步需要处理' : state.connected ? '已连接 GitHub' : '本地资料库';
+  $('sync-title').textContent = state.error ? '同步需要处理' : state.connected ? (state.remote.includes('gitee.com') ? '已连接 Gitee' : '已连接 GitHub') : '本地资料库';
   $('sync-detail').textContent = state.lastSync ? `上次同步 ${new Date(state.lastSync).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}` : '';
   $('sync-detail').hidden = !state.lastSync || !!state.error;
   $('sync-card').classList.toggle('connected', state.connected && !state.error);

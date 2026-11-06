@@ -53,7 +53,7 @@ final class PaperRepUITests: XCTestCase {
             XCTAssertTrue(list.waitForExistence(timeout: 5))
             list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.15)).press(forDuration: 0.1, thenDragTo: list.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9)))
             // The isolated library has no repository/credential, so no real network call is made.
-            XCTAssertTrue(app.staticTexts["请先在设置中连接 GitHub 仓库。"].waitForExistence(timeout: 5))
+            XCTAssertTrue(app.staticTexts["请先在设置中连接远程仓库。"].waitForExistence(timeout: 5))
             app.buttons["关闭错误"].tap()
             XCTAssertTrue(app.navigationBars["我的论文"].waitForExistence(timeout: 5))
         }

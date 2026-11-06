@@ -111,3 +111,14 @@ test('push failure retains imported PDF and local commit, then supports retry', 
   await exec('git', ['init', '--bare', '-b', 'main', lib.config.remote]);
   await lib.sync(); assert.equal(lib.state.error, ''); assert(lib.state.lastSync);
 });
+
+test('Gitee HTTPS and SSH remotes are accepted without contacting the live service', async t => {
+  const { lib, root } = await fixture(t);
+  lib.syncUnlocked = async () => {};
+  for (const remote of ['https://gitee.com/you/papers.git', 'git@gitee.com:you/papers.git']) {
+    await lib.git(['remote', 'remove', 'origin']).catch(() => {});
+    await lib.configure({ root, remote });
+    assert.equal(await lib.git(['remote', 'get-url', 'origin']), remote);
+  }
+  await assert.rejects(lib.configure({ root, remote: 'https://gitee.com.evil.test/you/papers.git' }), /HTTPS/);
+});

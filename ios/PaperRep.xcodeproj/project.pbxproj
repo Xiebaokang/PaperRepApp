@@ -2,6 +2,8 @@
 { archiveVersion = 1; classes = {}; objectVersion = 56; objects = {
 C29C85E6C68E1FF140403EA7 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GitHubSync.swift"; sourceTree = "<group>"; };
 01FB13CFBB944163815750D9 = { isa = PBXBuildFile; fileRef = C29C85E6C68E1FF140403EA7; };
+26022680012DB01A0E38D317 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GiteeSync.swift"; sourceTree = "<group>"; };
+7A15328F264BD6FB04D54BE1 = { isa = PBXBuildFile; fileRef = 26022680012DB01A0E38D317; };
 6BBE7E2067BBD46C16063A2D = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LibraryDisk.swift"; sourceTree = "<group>"; };
 98E7941F76053BBB82196AA0 = { isa = PBXBuildFile; fileRef = 6BBE7E2067BBD46C16063A2D; };
 00F3FC951231C7A20FDB28E3 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LibraryStore.swift"; sourceTree = "<group>"; };
@@ -17,9 +19,9 @@ F85C24C0A595FFDD4A8C7A50 = { isa = PBXBuildFile; fileRef = 9AF1A3A8DE243EC54809C
 3685E330EC5277A9DD5661C6 = { isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 66F17FD47768D90D75A0AC8F = { isa = PBXBuildFile; fileRef = 3685E330EC5277A9DD5661C6; };
 0112DAE3F84CB4DF5179BE01 = { isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-A158F59E3DF4EF4DA6D7F69F = { isa = PBXGroup; children = (C29C85E6C68E1FF140403EA7, 6BBE7E2067BBD46C16063A2D, 00F3FC951231C7A20FDB28E3, 0C84C548A0F358B0230B1769, 32B56F44C81D9FA470CF3AEC, 6ED7971FCF413BFD5CE4EBC2, 9AF1A3A8DE243EC54809C3FE, 3685E330EC5277A9DD5661C6, 0112DAE3F84CB4DF5179BE01,); path = PaperRep; sourceTree = "<group>"; };
+A158F59E3DF4EF4DA6D7F69F = { isa = PBXGroup; children = (C29C85E6C68E1FF140403EA7, 26022680012DB01A0E38D317, 6BBE7E2067BBD46C16063A2D, 00F3FC951231C7A20FDB28E3, 0C84C548A0F358B0230B1769, 32B56F44C81D9FA470CF3AEC, 6ED7971FCF413BFD5CE4EBC2, 9AF1A3A8DE243EC54809C3FE, 3685E330EC5277A9DD5661C6, 0112DAE3F84CB4DF5179BE01,); path = PaperRep; sourceTree = "<group>"; };
 83D188DD815ED702D5DC9878 = { isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PaperRep.app; sourceTree = BUILT_PRODUCTS_DIR; };
-7D2ECC1994A11A74B58F64BC = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (01FB13CFBB944163815750D9, 98E7941F76053BBB82196AA0, 0B8A6905858DF21BA7BB31B7, 4306DB5CE94F37B58A06201F, 985A3A0494AB9F25E2092A9C, FAAEF84527195C7EC4ACFAA7, F85C24C0A595FFDD4A8C7A50,); runOnlyForDeploymentPostprocessing = 0; };
+7D2ECC1994A11A74B58F64BC = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (01FB13CFBB944163815750D9, 7A15328F264BD6FB04D54BE1, 98E7941F76053BBB82196AA0, 0B8A6905858DF21BA7BB31B7, 4306DB5CE94F37B58A06201F, 985A3A0494AB9F25E2092A9C, FAAEF84527195C7EC4ACFAA7, F85C24C0A595FFDD4A8C7A50,); runOnlyForDeploymentPostprocessing = 0; };
 2E86A558678FDF538F7744AB = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (66F17FD47768D90D75A0AC8F,); runOnlyForDeploymentPostprocessing = 0; };
 8AAD687AC8E0FF66873D1DF5 = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 8B540AA97E88C92E2B2E4285 = { isa = XCBuildConfiguration; buildSettings = { PRODUCT_NAME = "PaperRep"; PRODUCT_BUNDLE_IDENTIFIER = "com.paperrep.ios"; SWIFT_VERSION = "5.0"; IPHONEOS_DEPLOYMENT_TARGET = "17.0"; TARGETED_DEVICE_FAMILY = "1"; CODE_SIGN_STYLE = "Automatic"; GENERATE_INFOPLIST_FILE = "YES"; SWIFT_EMIT_LOC_STRINGS = "YES"; INFOPLIST_FILE = "PaperRep/Info.plist"; PRODUCT_MODULE_NAME = "PaperRepIOS"; ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon"; CURRENT_PROJECT_VERSION = "1"; MARKETING_VERSION = "1.0.0"; ENABLE_PREVIEWS = "YES"; SUPPORTED_PLATFORMS = "iphoneos iphonesimulator"; SUPPORTS_MACCATALYST = "NO"; }; name = Debug; };
@@ -28,11 +30,13 @@ A158F59E3DF4EF4DA6D7F69F = { isa = PBXGroup; children = (C29C85E6C68E1FF140403EA
 38FC478A60179158C7054572 = { isa = PBXNativeTarget; buildConfigurationList = 2D4028C74C1389CC41B1ACA0; buildPhases = (7D2ECC1994A11A74B58F64BC, 2E86A558678FDF538F7744AB, 8AAD687AC8E0FF66873D1DF5,); buildRules = (); dependencies = (); name = PaperRepIOS; productName = PaperRep; productReference = 83D188DD815ED702D5DC9878; productType = "com.apple.product-type.application"; };
 69D2FF19FA6663B9C04784A1 = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GitHubSyncTests.swift"; sourceTree = "<group>"; };
 456FD0F444CF01F6D0A42380 = { isa = PBXBuildFile; fileRef = 69D2FF19FA6663B9C04784A1; };
+A719E92CE621D4E1D43AFB9C = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GiteeSyncTests.swift"; sourceTree = "<group>"; };
+5E275B2A9BB39FB3D49B032E = { isa = PBXBuildFile; fileRef = A719E92CE621D4E1D43AFB9C; };
 419AC18FBAACD5A2E9D433AE = { isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PaperRepTests.swift"; sourceTree = "<group>"; };
 F9F8A8CE30C29FC100466EA5 = { isa = PBXBuildFile; fileRef = 419AC18FBAACD5A2E9D433AE; };
-ECA1B0C394BCEE14A7ABEBFF = { isa = PBXGroup; children = (69D2FF19FA6663B9C04784A1, 419AC18FBAACD5A2E9D433AE,); path = PaperRepTests; sourceTree = "<group>"; };
+ECA1B0C394BCEE14A7ABEBFF = { isa = PBXGroup; children = (69D2FF19FA6663B9C04784A1, A719E92CE621D4E1D43AFB9C, 419AC18FBAACD5A2E9D433AE,); path = PaperRepTests; sourceTree = "<group>"; };
 D7A89DF8AD4CE4D81D6E1843 = { isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PaperRepTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-D332A6E20C529CA7E7522014 = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (456FD0F444CF01F6D0A42380, F9F8A8CE30C29FC100466EA5,); runOnlyForDeploymentPostprocessing = 0; };
+D332A6E20C529CA7E7522014 = { isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (456FD0F444CF01F6D0A42380, 5E275B2A9BB39FB3D49B032E, F9F8A8CE30C29FC100466EA5,); runOnlyForDeploymentPostprocessing = 0; };
 D9B27E62E1E53777D6B2325E = { isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 DED871F86F53A1B5A5925BDF = { isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = (); runOnlyForDeploymentPostprocessing = 0; };
 158A6FC6B42F083B0864A975 = { isa = XCBuildConfiguration; buildSettings = { PRODUCT_NAME = "PaperRepTests"; PRODUCT_BUNDLE_IDENTIFIER = "com.paperrep.ios.tests"; SWIFT_VERSION = "5.0"; IPHONEOS_DEPLOYMENT_TARGET = "17.0"; TARGETED_DEVICE_FAMILY = "1"; CODE_SIGN_STYLE = "Automatic"; GENERATE_INFOPLIST_FILE = "YES"; SWIFT_EMIT_LOC_STRINGS = "YES"; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PaperRep.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PaperRep"; BUNDLE_LOADER = "$(TEST_HOST)"; }; name = Debug; };

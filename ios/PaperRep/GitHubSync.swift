@@ -4,20 +4,23 @@ import PDFKit
 
 enum TokenVault {
     private static let service = "com.paperrep.ios.github"
-    static func read() -> String {
+    static func read(for repository: Repository? = nil) -> String {
         var result: CFTypeRef?
-        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: "token", kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let data = result as? Data else { return "" }
+        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: repository?.credentialKey ?? "token", kSecReturnData as String: true, kSecMatchLimit as String: kSecMatchLimitOne]
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess, let data = result as? Data else {
+            if let repository, repository.provider == .github { return read() }
+            return ""
+        }
         return String(data: data, encoding: .utf8) ?? ""
     }
-    static func save(_ token: String) throws {
-        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: "token"]
+    static func save(_ token: String, for repository: Repository? = nil) throws {
+        let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service, kSecAttrAccount as String: repository?.credentialKey ?? "token"]
         SecItemDelete(query as CFDictionary)
         guard !token.isEmpty else { return }
         var attributes = query
         attributes[kSecValueData as String] = Data(token.utf8)
         attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        guard SecItemAdd(attributes as CFDictionary, nil) == errSecSuccess else { throw PaperError.message("无法保存 GitHub 凭据。") }
+        guard SecItemAdd(attributes as CFDictionary, nil) == errSecSuccess else { throw PaperError.message("无法保存仓库凭据。") }
     }
 }
 
@@ -171,12 +174,12 @@ actor GitHubSync {
     }
     static func message(_ error: Error) -> String {
         if let failure = error as? GitHubFailure {
-            if failure.message.localizedCaseInsensitiveContains("rate limit") { return "GitHub 请求过于频繁，请稍后重试。" }
+            if failure.message.localizedCaseInsensitiveContains("rate limit") { return "仓库请求过于频繁，请稍后重试。" }
             switch failure.status {
             case 401, 403, 404: return "无法访问仓库，请检查令牌和仓库读写权限。"
             case 409, 422: return "远程仓库已更新，请重试同步。本地文件已保留。"
-            case 429: return "GitHub 请求过于频繁，请稍后重试。"
-            default: return "GitHub 暂时不可用，请稍后重试。"
+            case 429: return "仓库请求过于频繁，请稍后重试。"
+            default: return "仓库服务暂时不可用，请稍后重试。"
             }
         }
         if let failure = error as? URLError {
