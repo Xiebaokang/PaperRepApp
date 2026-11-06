@@ -40,6 +40,10 @@ test('timeout terminates both the command and a transport child that ignores SIG
 
 test('connection, timeout and unknown errors produce useful messages without credentials', () => {
   assert.match(gitError({ stderr: 'error: RPC failed; curl 92 HTTP/2 stream' }, 'push').message, /连接中断/);
+  const transport = gitError({ stderr: 'fatal: unable to access https://secret@gitee.com/a/b?access_token=private: SSL_connect: Connection reset by peer' }, 'fetch').message;
+  assert.match(transport, /下载/);
+  assert.match(transport, /SSL_connect: Connection reset by peer/);
+  assert(!transport.includes('secret')); assert(!transport.includes('private'));
   assert.match(gitError({ timedOut: true, message: 'Command failed: git push' }, 'push').message, /上传超时/);
   assert.match(gitError({ stderr: 'remote rejected https://secret@github.com/a/b' }, 'push').message, /https:\/\/github/);
   assert(!gitError({ stderr: 'remote rejected https://secret@github.com/a/b' }, 'push').message.includes('secret'));
