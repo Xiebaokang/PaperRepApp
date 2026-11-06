@@ -22,18 +22,23 @@ actor GiteeSync {
         req.setValue("PaperRep-iOS", forHTTPHeaderField: "User-Agent")
         return req
     }
-    private func decode(_ data: Data, _ response: URLResponse) throws -> Any {
+    private func decode(_ data: Data, _ response: URLResponse, operation: String) throws -> Any {
         guard let http = response as? HTTPURLResponse else { throw PaperError.message("仓库响应无效。") }
         guard (200..<300).contains(http.statusCode) else {
-            let message = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])?["message"] as? String ?? "Gitee 请求失败"
+            let object = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any]
+            let detail = object?["message"] as? String ?? (object?["messages"] as? [String])?.joined(separator: "; ") ?? object?["error"] as? String ?? "请求被拒绝"
+            // Server validation details are useful; credentials and request URLs are not.
+            let message = String(detail.replacingOccurrences(of: token, with: "[已隐藏]")
+                .replacingOccurrences(of: "https?://[^\\s]+", with: "[地址已隐藏]", options: .regularExpression).prefix(180))
             if http.statusCode == 413 { throw PaperError.message("文件超过 Gitee 接口限制，本地文件已保留。") }
-            throw GitHubFailure(status: http.statusCode, message: message)
+            throw GitHubFailure(status: http.statusCode, message: message, provider: "Gitee", operation: operation)
         }
         return try JSONSerialization.jsonObject(with: data)
     }
     private func get(_ path: String, query: [String: String] = [:]) async throws -> Any {
         let (data, response) = try await session.data(for: request(path, query: query))
-        return try decode(data, response)
+        let operation = path.contains("/git/trees/") ? "读取目录" : path.contains("/git/blobs/") ? "下载文件" : path == "/commits" ? "检查提交" : "读取仓库"
+        return try decode(data, response, operation: operation)
     }
     private func files(branch: String, empty: Bool = false) async throws -> [String: String] {
         if empty { return [:] }
@@ -65,7 +70,7 @@ actor GiteeSync {
         if let old { fields["sha"] = old }
         if file == nil {
             let (data, response) = try await session.data(for: request(route, method: "DELETE", query: fields))
-            _ = try decode(data, response); return
+            _ = try decode(data, response, operation: "删除文件"); return
         }
         // Stream base64 to disk instead of keeping a second full PDF in memory.
         let body = disk.support.appendingPathComponent(UUID().uuidString + ".json")
@@ -79,15 +84,24 @@ actor GiteeSync {
         while let chunk = try input.read(upToCount: 48 * 1024), !chunk.isEmpty { try output.write(contentsOf: chunk.base64EncodedData()) }
         try output.write(contentsOf: Data("\"}".utf8)); try output.close()
         let (data, response) = try await session.upload(for: request(route, method: old == nil ? "POST" : "PUT"), fromFile: body)
-        _ = try decode(data, response)
+        _ = try decode(data, response, operation: old == nil ? "创建文件" : "更新文件")
     }
     func synchronize(baseline: [String: String]) async throws -> (Repository, [String: String]) {
         await progress("检查 Gitee 仓库")
         guard let info = try await get("") as? [String: Any] else { throw PaperError.message("仓库数据无效。") }
         let branch = repository.branch.isEmpty ? (info["default_branch"] as? String ?? "master") : repository.branch
         var remote = try await files(branch: branch, empty: info["empty"] as? Bool == true)
-        let local = try disk.manifest()
-        let desired = try SyncPlanner.merge(baseline: baseline, local: local, remote: remote)
+        var local = try disk.manifest()
+        var desired = try SyncPlanner.merge(baseline: baseline, local: local, remote: remote)
+        // Gitee rejects empty Contents payloads, including zero-byte .gitkeep files.
+        // Only normalize markers that actually need uploading; PDFs are never changed.
+        let emptyHash = GitHash.blob(Data()), marker = Data("\n".utf8)
+        for key in desired.keys.sorted() where key.hasSuffix("/.gitkeep") && desired[key] == emptyHash && local[key] == emptyHash && remote[key] != emptyHash {
+            let file = try disk.url(key)
+            guard try GitHash.file(file) == emptyHash else { throw PaperError.message("同步期间本地文件有更改，请重新同步。") }
+            try marker.write(to: file, options: .atomic)
+            local[key] = GitHash.blob(marker); desired[key] = local[key]
+        }
         let staging = disk.support.appendingPathComponent("Gitee-" + UUID().uuidString)
         try FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: staging) }

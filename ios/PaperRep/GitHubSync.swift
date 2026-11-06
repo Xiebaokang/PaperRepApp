@@ -24,7 +24,12 @@ enum TokenVault {
     }
 }
 
-struct GitHubFailure: Error { let status: Int; let message: String }
+struct GitHubFailure: Error {
+    let status: Int
+    let message: String
+    var provider: String? = nil
+    var operation: String? = nil
+}
 
 actor GitHubSync {
     let disk: LibraryDisk
@@ -174,6 +179,16 @@ actor GitHubSync {
     }
     static func message(_ error: Error) -> String {
         if let failure = error as? GitHubFailure {
+            if failure.provider == "Gitee" {
+                let context = "Gitee \(failure.operation ?? "同步")失败（HTTP \(failure.status)）"
+                switch failure.status {
+                case 401, 403: return context + "：请检查令牌的 projects 权限及仓库写入权限。"
+                case 404: return context + "：找不到仓库、分支或文件，请检查仓库设置。"
+                case 429: return context + "：请求过于频繁，请稍后重试。"
+                default:
+                    return context + (failure.message.isEmpty ? "，请稍后重试。" : "：" + failure.message)
+                }
+            }
             if failure.message.localizedCaseInsensitiveContains("rate limit") { return "仓库请求过于频繁，请稍后重试。" }
             switch failure.status {
             case 401, 403, 404: return "无法访问仓库，请检查令牌和仓库读写权限。"

@@ -49,3 +49,5 @@ API 依据：[Apple PDFKit](https://developer.apple.com/documentation/pdfkit)、
 Gitee API 依据：[官方 v5 文档](https://gitee.com/api/v5/swagger)。模拟接口测试覆盖新建、更新、删除、下载和部分提交后重试；真实账号同步需要在 App 内填写令牌后验证。
 
 2026-11-06 Gitee 支持已在 iPhone 16 Pro 编译安装并验证：15 项核心/API 模拟测试及 2 项界面回归通过。已只读核实 Gitee 空仓库的实际 404 响应并覆盖初始化测试；未使用用户真实令牌执行上传。
+
+Gitee Contents 不接受空文件内容：需要上传的零字节 `.gitkeep` 会改为一个换行并同步其真实 Git 哈希，已存在且无需上传的占位文件不变。Gitee 错误会显示请求阶段、HTTP 状态及脱敏后的 message/messages 校验信息，避免把 400 等请求错误误报成服务不可用。对应兼容和脱敏测试已通过真机验证。

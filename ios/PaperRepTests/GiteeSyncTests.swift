@@ -16,6 +16,24 @@ private final class GiteeProtocol: URLProtocol {
     override func stopLoading() {}
 }
 final class GiteeSyncTests: XCTestCase {
+    func testGiteeValidationErrorReportsStageAndStatusWithoutToken() async throws {
+        let base = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: base); GiteeProtocol.handler = nil }
+        let disk = LibraryDisk(root: base.appendingPathComponent("Library"), support: base.appendingPathComponent("Support"))
+        try disk.initialize()
+        GiteeProtocol.handler = { _ in
+            (400, try JSONSerialization.data(withJSONObject: ["messages": ["content is empty", "secret-test-token", "https://gitee.com/?access_token=secret-test-token"]]))
+        }
+        let config = URLSessionConfiguration.ephemeral; config.protocolClasses = [GiteeProtocol.self]
+        let session = URLSession(configuration: config); defer { session.invalidateAndCancel() }
+        let service = GiteeSync(disk: disk, repository: try Repository.parse("https://gitee.com/you/papers"), token: "secret-test-token", session: session) { _ in }
+        do { _ = try await service.synchronize(baseline: [:]); XCTFail("Expected validation error") }
+        catch {
+            let message = GitHubSync.message(error)
+            XCTAssertTrue(message.contains("HTTP 400")); XCTAssertTrue(message.contains("读取仓库"))
+            XCTAssertTrue(message.contains("content is empty")); XCTAssertFalse(message.contains("secret-test-token")); XCTAssertFalse(message.contains("https://"))
+        }
+    }
     func testProviderParsingAndLegacySettings() throws {
         let old = Data(#"{"owner":"you","name":"papers","branch":"main"}"#.utf8)
         let github = try JSONDecoder().decode(Repository.self, from: old)
@@ -39,12 +57,22 @@ final class GiteeSyncTests: XCTestCase {
                 if path.hasSuffix("/papers") { return try response(["default_branch": NSNull()]) }
                 if path.contains("/git/trees/") {
                     if !created { return try response(["message": "Tree not found"], 404) }
-                    return try response(["tree": [["path": "2026/11/.gitkeep", "mode": "100644", "type": "blob", "sha": GitHash.blob(Data())]]])
+                    return try response(["tree": [["path": "2026/11/.gitkeep", "mode": "100644", "type": "blob", "sha": GitHash.blob(Data("\n".utf8))]]])
                 }
                 if path.hasSuffix("/commits") {
                     return empty ? try response(["message": "Repository is empty"], 404) : try response([["sha": "existing"]])
                 }
                 XCTAssertTrue(empty); XCTAssertEqual(request.httpMethod, "POST")
+                var body = request.httpBody ?? Data()
+                if let stream = request.httpBodyStream {
+                    stream.open(); defer { stream.close() }; var buffer = [UInt8](repeating: 0, count: 4096)
+                    while true { let n = stream.read(&buffer, maxLength: buffer.count); if n <= 0 { break }; body.append(contentsOf: buffer.prefix(n)) }
+                }
+                let json = try JSONSerialization.jsonObject(with: body) as! [String: String]
+                guard let content = json["content"], let bytes = Data(base64Encoded: content), !bytes.isEmpty else {
+                    return try response(["messages": ["content is empty"]], 400)
+                }
+                XCTAssertEqual(bytes, Data("\n".utf8))
                 created = true; return try response([:], 201)
             }
             let config = URLSessionConfiguration.ephemeral; config.protocolClasses = [GiteeProtocol.self]
